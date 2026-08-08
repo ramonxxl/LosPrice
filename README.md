@@ -58,8 +58,28 @@ preço = (custo + custos em R$) ÷ (1 − soma dos percentuais)
 - Arredondamento psicológico (`,90`)
 - Alerta de produto vendendo no prejuízo
 
+### Simulador
+- "E se eu vender por R$ 18,90?" com abertura completa do preço
+- Barra proporcional mostrando para onde vai cada centavo
+- Preço mínimo, desconto máximo e custo-alvo
+
+### Fornecedores
+- Cadastro, itens fornecidos e total já comprado
+- **Comparativo de preço** quando o mesmo insumo veio de mais de um fornecedor
+
+### Configurações
+- Regime tributário com alíquota automática
+- Edição das taxas de cada canal
+- **Rateio real de custo fixo** — em R$ por unidade e em % sobre o faturamento
+- Backup e restauração do banco
+
+### Dashboard
+- Alertas acionáveis: produto no prejuízo, ficha defasada, insumo que subiu
+- Ranking de produtos por margem
+- Insumos que mais pesam nas fichas — onde negociar rende mais
+
 ### Ainda em construção
-Simulador · Fornecedores · Relatórios · Configurações · Dashboard
+Relatórios (PDF e Excel)
 
 ---
 

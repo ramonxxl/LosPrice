@@ -194,6 +194,7 @@ CREATE TABLE IF NOT EXISTS receitas (
     tempo_preparo  INTEGER,                    -- minutos
     modo_preparo   TEXT,
     imagem         TEXT,                       -- caminho relativo em assets/
+    vendas_mes     REAL    NOT NULL DEFAULT 0, -- volume estimado, para engenharia de cardapio
     custo_total    REAL    NOT NULL DEFAULT 0, -- custo do lote inteiro
     custo_unitario REAL    NOT NULL DEFAULT 0, -- custo_total / rendimento
     ativo          INTEGER NOT NULL DEFAULT 1,
@@ -294,6 +295,43 @@ CREATE TABLE IF NOT EXISTS configuracoes (
     descricao TEXT
 );
 """
+
+
+# ---------------------------------------------------------------------------
+# Migracoes
+# ---------------------------------------------------------------------------
+
+# Colunas adicionadas depois que o schema original ja estava em uso.
+# Cada entrada: (tabela, coluna, definicao SQL).
+# CREATE TABLE IF NOT EXISTS nao altera tabela existente, entao bancos
+# antigos precisam do ALTER TABLE.
+MIGRACOES_COLUNAS = [
+    # volume mensal estimado, base da engenharia de cardapio
+    ("receitas", "vendas_mes", "REAL NOT NULL DEFAULT 0"),
+]
+
+
+def _colunas(cur, tabela):
+    cur.execute(f"PRAGMA table_info({tabela})")
+    return {linha["name"] for linha in cur.fetchall()}
+
+
+def aplicar_migracoes():
+    """Roda no inicio. Idempotente: o que ja existe e ignorado."""
+    aplicadas = []
+    with conectar() as cur:
+        for tabela, coluna, definicao in MIGRACOES_COLUNAS:
+            cur.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+                (tabela,),
+            )
+            if not cur.fetchone():
+                continue
+            if coluna in _colunas(cur, tabela):
+                continue
+            cur.execute(f"ALTER TABLE {tabela} ADD COLUMN {coluna} {definicao}")
+            aplicadas.append(f"{tabela}.{coluna}")
+    return aplicadas
 
 
 # ---------------------------------------------------------------------------
@@ -453,6 +491,7 @@ def inicializar(com_backup=True):
     finally:
         conexao.close()
 
+    aplicar_migracoes()
     popular_padroes()
     return banco_novo
 

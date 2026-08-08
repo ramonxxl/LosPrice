@@ -78,8 +78,12 @@ preço = (custo + custos em R$) ÷ (1 − soma dos percentuais)
 - Ranking de produtos por margem
 - Insumos que mais pesam nas fichas — onde negociar rende mais
 
-### Ainda em construção
-Relatórios (PDF e Excel)
+### Relatórios
+- **Ficha técnica em PDF** para imprimir e colar na cozinha
+- Tabela de preços por canal em PDF
+- **Engenharia de cardápio** — classifica cada produto em Estrela, Puxador,
+  Enigma ou Abacaxi cruzando margem com volume de vendas
+- Exportação para Excel com quatro abas
 
 ---
 
@@ -126,7 +130,7 @@ python core/calculo.py
 
 ## Tecnologia
 
-Python · CustomTkinter · SQLite · Pillow
+Python · CustomTkinter · SQLite · Pillow · ReportLab · OpenPyXL
 
 ---
 

@@ -461,6 +461,14 @@ def classificar_cardapio(margem, popularidade, margem_media, popularidade_media)
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
+    import os
+    import sys
+
+    # Permite rodar direto de qualquer lugar: python core/calculo.py
+    # Sem isso o import de utils/ so funciona com PYTHONPATH apontando
+    # para a raiz do projeto.
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
     from utils.tema import formatar_moeda, formatar_moeda_precisa, formatar_pct, rotulo_margem
 
     print("=" * 74)

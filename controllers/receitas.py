@@ -165,13 +165,20 @@ def categorias():
         return [linha["categoria"] for linha in cur.fetchall()]
 
 
-def estatisticas():
+def estatisticas(desatualizadas=None):
+    """
+    desatualizadas: informe a contagem quando ja tiver a lista em maos.
+    listar() ja calcula o custo atual de cada ficha; recalcular tudo aqui
+    de novo dobrava o trabalho a cada recarga de tela.
+    """
     with conectar() as cur:
         cur.execute("SELECT COUNT(*) AS n, AVG(custo_unitario) AS media "
                     "  FROM receitas WHERE ativo = 1")
         linha = cur.fetchone()
 
-    desatualizadas = len(listar_desatualizadas())
+    if desatualizadas is None:
+        desatualizadas = len(listar_desatualizadas())
+
     return {
         "total": linha["n"] or 0,
         "custo_medio": linha["media"] or 0.0,

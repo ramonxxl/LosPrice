@@ -1,4 +1,4 @@
-"""
+﻿"""
 LosPrice - Tela de Precificacao
 ================================
 
@@ -116,21 +116,21 @@ class TelaPrecificacao(ctk.CTkFrame):
 
         self.campo_margem = Campo(linha, "Lucro desejado (%)",
                                   valor=f"{padrao['margem_pct']:g}",
-                                  ao_digitar=self._recalcular, largura=120)
+                                  ao_digitar=self._recalcular, atraso=300, largura=120)
         self.campo_margem.pack(side="left", padx=(0, Espaco.MD))
 
         self.campo_imposto = Campo(linha, "Imposto (%)",
                                    valor=f"{padrao['imposto_pct']:g}",
-                                   ao_digitar=self._recalcular, largura=100)
+                                   ao_digitar=self._recalcular, atraso=300, largura=100)
         self.campo_imposto.pack(side="left", padx=(0, Espaco.MD))
 
         self.campo_custo_fixo = Campo(linha, "Custo fixo (%)",
                                       valor=f"{padrao['custo_fixo_pct']:g}",
-                                      ao_digitar=self._recalcular, largura=100)
+                                      ao_digitar=self._recalcular, atraso=300, largura=100)
         self.campo_custo_fixo.pack(side="left", padx=(0, Espaco.MD))
 
         self.campo_custo_rs = Campo(linha, "Custo fixo (R$)", valor="0",
-                                    ao_digitar=self._recalcular, largura=110,
+                                    ao_digitar=self._recalcular, atraso=300, largura=110,
                                     ajuda="Rateio por unidade")
         self.campo_custo_rs.pack(side="left", padx=(0, Espaco.MD))
 
@@ -248,7 +248,7 @@ class TelaPrecificacao(ctk.CTkFrame):
 
         apoio = ctk.CTkLabel(interno,
                              text=f"{receita.get('categoria') or 'Sem categoria'}"
-                                  f"  ·  {formatar_moeda(receita['custo_unitario'])}",
+                                  f"  Â·  {formatar_moeda(receita['custo_unitario'])}",
                              font=Fontes.micro(),
                              text_color=Cores.TEXTO_SECUNDARIO, anchor="w")
         apoio.pack(fill="x")
@@ -277,7 +277,7 @@ class TelaPrecificacao(ctk.CTkFrame):
 
         self.titulo.configure(text=receita["nome"])
         self.subtitulo.configure(
-            text=f"{receita.get('categoria') or 'Sem categoria'}  ·  "
+            text=f"{receita.get('categoria') or 'Sem categoria'}  Â·  "
                  f"rende {receita['rendimento']:g} {receita['unidade_rend'].lower()}")
         self.custo.configure(text=formatar_moeda(receita["custo_unitario"]))
 
@@ -369,7 +369,7 @@ class TelaPrecificacao(ctk.CTkFrame):
             taxas.append(f"cartao {formatar_pct(linha['cartao_pct'], 1)}")
         if linha["taxa_fixa"]:
             taxas.append(f"+{formatar_moeda(linha['taxa_fixa'])}")
-        ctk.CTkLabel(caixa, text="  ·  ".join(taxas) or "sem taxas",
+        ctk.CTkLabel(caixa, text="  Â·  ".join(taxas) or "sem taxas",
                      font=Fontes.micro(), text_color=Cores.TEXTO_APAGADO,
                      anchor="w").pack(fill="x", padx=(9, 0))
 
@@ -500,7 +500,7 @@ class TelaPrecificacao(ctk.CTkFrame):
 
         self.aviso.configure(
             text=f"Melhor canal: {melhor['canal']} ({formatar_moeda(melhor['lucro'])} "
-                 f"por venda)  ·  diferenca de {formatar_moeda(diferenca)} "
+                 f"por venda)  Â·  diferenca de {formatar_moeda(diferenca)} "
                  f"para {pior['canal']}",
             text_color=Cores.TEXTO_SECUNDARIO)
 
@@ -525,3 +525,4 @@ class TelaPrecificacao(ctk.CTkFrame):
         self.recarregar(manter_selecao=True)
         notificar(self, f"Precificacao de '{self.receita['nome']}' salva "
                         f"em {len(self.dados['linhas'])} canais.", "sucesso")
+

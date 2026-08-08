@@ -113,7 +113,9 @@ class TelaReceitas(ctk.CTkFrame):
         self.tabela.preencher(registros)
         self.filtro.opcoes(["Todas"] + ctrl.categorias())
 
-        stats = ctrl.estatisticas()
+        # a contagem ja saiu de listar(); nao vale varrer as fichas de novo
+        defasadas = sum(1 for r in registros if r["desatualizada"])
+        stats = ctrl.estatisticas(desatualizadas=defasadas)
         texto = f"{stats['total']} receitas"
         if stats["total"]:
             texto += f"  ·  custo medio {formatar_moeda(stats['custo_medio'])}"

@@ -42,7 +42,7 @@ class Botao(ctk.CTkButton):
 
 
 class BotaoIcone(ctk.CTkButton):
-    """Botao quadrado apenas com icone, para acoes de linha da tabela."""
+    """Botao quadrado apenas com icone. Para dialogos e barras de acao."""
 
     def __init__(self, pai, icone, comando=None, cor=None, dica=None, **kw):
         super().__init__(
@@ -51,6 +51,30 @@ class BotaoIcone(ctk.CTkButton):
             hover_color=Cores.CARD_HOVER, text_color=cor or Cores.TEXTO_SECUNDARIO,
             corner_radius=Raio.PEQUENO, **kw,
         )
+        if dica:
+            Dica(self, dica)
+
+
+class IconeAcao(ctk.CTkLabel):
+    """
+    Versao leve do BotaoIcone, para as linhas da tabela.
+
+    Um CTkButton custa cerca de 3x um CTkLabel para criar. Numa tabela de
+    68 linhas com 3 acoes cada sao 204 botoes por redesenho - o suficiente
+    para travar a digitacao. Visualmente o resultado e o mesmo: icone que
+    muda de cor no hover e responde ao clique.
+    """
+
+    def __init__(self, pai, icone, comando=None, cor=None, dica=None):
+        self.cor = cor or Cores.TEXTO_SECUNDARIO
+        super().__init__(pai, text=icone, font=Fontes.icone(14),
+                         text_color=self.cor, width=28, cursor="hand2")
+
+        if comando:
+            self.bind("<Button-1>", lambda _e: comando())
+        self.bind("<Enter>", lambda _e: self.configure(text_color=Cores.LARANJA))
+        self.bind("<Leave>", lambda _e: self.configure(text_color=self.cor))
+
         if dica:
             Dica(self, dica)
 
@@ -190,11 +214,18 @@ class Badge(ctk.CTkFrame):
 
 
 class Campo(ctk.CTkFrame):
-    """Rotulo + entrada + linha de erro/ajuda."""
+    """
+    Rotulo + entrada + linha de erro/ajuda.
+
+    ao_digitar roda a cada tecla. Quando o retorno de chamada e pesado
+    (redesenhar uma grade inteira, por exemplo), passe `atraso` em ms
+    para so executar quando o usuario parar de digitar.
+    """
 
     def __init__(self, pai, rotulo, valor="", ajuda=None, largura=None,
-                 obrigatorio=False, ao_digitar=None, **kw):
+                 obrigatorio=False, ao_digitar=None, atraso=0, **kw):
         super().__init__(pai, fg_color="transparent")
+        self._agendado = None
 
         cabeca = ctk.CTkFrame(self, fg_color="transparent")
         cabeca.pack(fill="x")
@@ -220,7 +251,20 @@ class Campo(ctk.CTkFrame):
         self._ajuda = ajuda or ""
 
         if ao_digitar:
-            self.variavel.trace_add("write", lambda *_: ao_digitar())
+            if atraso:
+                self.variavel.trace_add(
+                    "write", lambda *_: self._agendar(ao_digitar, atraso))
+            else:
+                self.variavel.trace_add("write", lambda *_: ao_digitar())
+
+    def _agendar(self, retorno, atraso):
+        if self._agendado:
+            self.after_cancel(self._agendado)
+        self._agendado = self.after(atraso, lambda: self._executar(retorno))
+
+    def _executar(self, retorno):
+        self._agendado = None
+        retorno()
 
     def get(self):
         return self.variavel.get().strip()
@@ -287,11 +331,27 @@ class CampoSelecao(ctk.CTkFrame):
 
 
 class BarraBusca(ctk.CTkFrame):
-    def __init__(self, pai, ao_buscar, texto="Buscar...", largura=300):
+    """
+    Campo de busca com atraso.
+
+    Sem o atraso, cada tecla dispara uma reconstrucao inteira da tabela.
+    Com 68 registros isso levava mais de 3 segundos por tecla e a
+    digitacao travava. Agora a busca so roda quando o usuario para de
+    digitar.
+    """
+
+    ATRASO = 250  # ms sem digitar antes de buscar
+
+    def __init__(self, pai, ao_buscar, texto="Buscar...", largura=300,
+                 atraso=None):
         super().__init__(pai, fg_color="transparent")
 
+        self.ao_buscar = ao_buscar
+        self.atraso = self.ATRASO if atraso is None else atraso
+        self._agendado = None
+
         self.variavel = ctk.StringVar()
-        self.variavel.trace_add("write", lambda *_: ao_buscar(self.variavel.get().strip()))
+        self.variavel.trace_add("write", lambda *_: self._agendar())
 
         caixa = ctk.CTkFrame(self, fg_color=Cores.ENTRADA, corner_radius=Raio.PEQUENO,
                              border_color=Cores.BORDA, border_width=1,
@@ -301,16 +361,29 @@ class BarraBusca(ctk.CTkFrame):
 
         ctk.CTkLabel(caixa, text=Icone.BUSCAR, font=Fontes.icone(13),
                      text_color=Cores.TEXTO_APAGADO).pack(side="left", padx=(10, 4))
-        ctk.CTkEntry(caixa, textvariable=self.variavel, placeholder_text=texto,
-                     font=Fontes.corpo(), fg_color="transparent", border_width=0,
-                     text_color=Cores.TEXTO).pack(side="left", fill="both",
-                                                  expand=True, padx=(0, 6))
+        entrada = ctk.CTkEntry(caixa, textvariable=self.variavel,
+                               placeholder_text=texto, font=Fontes.corpo(),
+                               fg_color="transparent", border_width=0,
+                               text_color=Cores.TEXTO)
+        entrada.pack(side="left", fill="both", expand=True, padx=(0, 6))
+        entrada.bind("<Return>", lambda _: self._disparar())
+        entrada.bind("<Escape>", lambda _: self.limpar())
+
+    def _agendar(self):
+        if self._agendado:
+            self.after_cancel(self._agendado)
+        self._agendado = self.after(self.atraso, self._disparar)
+
+    def _disparar(self):
+        self._agendado = None
+        self.ao_buscar(self.get())
 
     def get(self):
         return self.variavel.get().strip()
 
     def limpar(self):
         self.variavel.set("")
+        self._disparar()
 
 
 # ---------------------------------------------------------------------------
@@ -343,6 +416,14 @@ class Tabela(ctk.CTkFrame):
         self.ordem_chave = None
         self.ordem_desc = False
         self._cabecalhos = {}
+        self._reserva = []          # linhas ja construidas, reaproveitadas
+        self._vazio_widget = None
+
+        # a fonte de cada coluna nao muda entre linhas: cria uma vez so
+        self._fontes = [
+            coluna["fonte"]() if callable(coluna.get("fonte")) else Fontes.corpo()
+            for coluna in colunas
+        ]
 
         # cabecalho
         self.cabecalho = ctk.CTkFrame(self, fg_color=Cores.TABELA_CABECALHO,
@@ -362,31 +443,28 @@ class Tabela(ctk.CTkFrame):
                                    text_color=Cores.TEXTO_APAGADO, anchor="w")
         self.rodape.pack(fill="x", padx=Espaco.MD, pady=(4, 6))
 
+    def _configurar_colunas(self, container):
+        """Larguras fixas por coluna, iguais no cabecalho e nas linhas."""
+        for indice, coluna in enumerate(self.colunas):
+            container.grid_columnconfigure(
+                indice, minsize=coluna.get("largura", 120) + Espaco.MD)
+        for extra in range(len(self.acoes)):
+            container.grid_columnconfigure(len(self.colunas) + extra, minsize=34)
+
     def _montar_cabecalho(self):
-        for coluna in self.colunas:
-            celula = ctk.CTkFrame(self.cabecalho, fg_color="transparent",
-                                  width=coluna.get("largura", 120))
-            celula.pack(side="left", fill="y", padx=(Espaco.MD, 0))
-            celula.pack_propagate(False)
+        self._configurar_colunas(self.cabecalho)
 
+        for indice, coluna in enumerate(self.colunas):
             rotulo = ctk.CTkLabel(
-                celula, text=coluna["titulo"].upper(), font=Fontes.micro(),
+                self.cabecalho, text=coluna["titulo"].upper(), font=Fontes.micro(),
                 text_color=Cores.TEXTO_APAGADO,
-                anchor=coluna.get("alinhamento", "w"),
+                anchor=coluna.get("alinhamento", "w"), cursor="hand2",
             )
-            rotulo.pack(fill="both", expand=True)
+            rotulo.grid(row=0, column=indice, sticky="nsew",
+                        padx=(Espaco.MD, 0))
+            rotulo.bind("<Button-1>",
+                        lambda _e, c=coluna["chave"]: self._ordenar(c))
             self._cabecalhos[coluna["chave"]] = rotulo
-
-            for widget in (celula, rotulo):
-                widget.configure(cursor="hand2")
-                widget.bind("<Button-1>",
-                            lambda _e, c=coluna["chave"]: self._ordenar(c))
-
-        if self.acoes:
-            largura = 34 * len(self.acoes) + Espaco.MD
-            reserva = ctk.CTkFrame(self.cabecalho, fg_color="transparent", width=largura)
-            reserva.pack(side="left", fill="y")
-            reserva.pack_propagate(False)
 
     def _ordenar(self, chave):
         self.ordem_desc = not self.ordem_desc if self.ordem_chave == chave else False
@@ -420,10 +498,19 @@ class Tabela(ctk.CTkFrame):
         return str(bruto)
 
     def preencher(self, linhas, reordenar=False):
+        """
+        Reaproveita as linhas ja construidas em vez de recriar tudo.
+
+        Destruir e recriar 68 linhas custava segundos e travava a
+        digitacao na busca. Agora as linhas existentes so trocam de texto
+        e de cor; widget novo so nasce quando a lista cresce, e o excedente
+        e escondido em vez de destruido.
+        """
         self.linhas = list(linhas)
 
-        for widget in self.corpo.winfo_children():
-            widget.destroy()
+        if self._vazio_widget is not None:
+            self._vazio_widget.destroy()
+            self._vazio_widget = None
 
         dados = self.linhas
         if self.ordem_chave:
@@ -435,66 +522,91 @@ class Tabela(ctk.CTkFrame):
             except TypeError:
                 pass
 
+        for registro in self._reserva:
+            registro["frame"].pack_forget()
+
         if not dados:
             self._mostrar_vazio()
             self.rodape.configure(text="")
             return
 
-        for i, linha in enumerate(dados):
-            self._montar_linha(i, linha)
+        for indice, linha in enumerate(dados):
+            registro = self._linha_reservada(indice)
+            self._aplicar_linha(registro, indice, linha)
+            registro["frame"].pack(fill="x")
 
         plural = "registro" if len(dados) == 1 else "registros"
         self.rodape.configure(text=f"{len(dados)} {plural}")
 
-    def _montar_linha(self, indice, linha):
-        fundo = Cores.TABELA_LINHA if indice % 2 == 0 else Cores.TABELA_LINHA_ALT
-        item = ctk.CTkFrame(self.corpo, fg_color=fundo, corner_radius=0, height=44)
-        item.pack(fill="x")
+    def _linha_reservada(self, indice):
+        """Devolve a linha do indice, criando se ainda nao existir."""
+        while indice >= len(self._reserva):
+            self._reserva.append(self._criar_linha(len(self._reserva)))
+        return self._reserva[indice]
+
+    def _criar_linha(self, indice):
+        # Uma linha = 1 CTkFrame apenas. Cada CTkFrame desenha retangulo
+        # arredondado com anti-aliasing num canvas; antes eram 9 por linha
+        # (uma celula por coluna), o que dominava o tempo de montagem.
+        item = ctk.CTkFrame(self.corpo, corner_radius=0, height=44)
         item.pack_propagate(False)
+        self._configurar_colunas(item)
 
-        celulas = []
-        for coluna in self.colunas:
-            celula = ctk.CTkFrame(item, fg_color="transparent",
-                                  width=coluna.get("largura", 120))
-            celula.pack(side="left", fill="y", padx=(Espaco.MD, 0))
-            celula.pack_propagate(False)
+        registro = {"frame": item, "rotulos": [], "dados": {},
+                    "fundo": Cores.TABELA_LINHA}
 
-            cor = coluna["cor"](linha) if callable(coluna.get("cor")) else Cores.TEXTO
-            fonte = coluna["fonte"]() if callable(coluna.get("fonte")) else Fontes.corpo()
-
-            rotulo = ctk.CTkLabel(celula, text=self._valor_formatado(coluna, linha),
-                                  font=fonte, text_color=cor,
+        for coluna_idx, coluna in enumerate(self.colunas):
+            rotulo = ctk.CTkLabel(item, text="", font=self._fontes[coluna_idx],
                                   anchor=coluna.get("alinhamento", "w"))
-            rotulo.pack(fill="both", expand=True)
-            celulas.extend([celula, rotulo])
+            rotulo.grid(row=0, column=coluna_idx, sticky="nsew",
+                        padx=(Espaco.MD, 0))
+            registro["rotulos"].append(rotulo)
 
-        if self.acoes:
-            caixa = ctk.CTkFrame(item, fg_color="transparent",
-                                 width=34 * len(self.acoes) + Espaco.MD)
-            caixa.pack(side="left", fill="y")
-            caixa.pack_propagate(False)
-            for acao in self.acoes:
-                BotaoIcone(caixa, acao["icone"],
-                           comando=lambda a=acao, l=linha: a["comando"](l),
-                           cor=acao.get("cor"), dica=acao.get("dica")).pack(
-                    side="left", pady=8, padx=2)
+        for extra, acao in enumerate(self.acoes):
+            IconeAcao(item, acao["icone"],
+                      comando=lambda a=acao, r=registro: a["comando"](r["dados"]),
+                      cor=acao.get("cor"), dica=acao.get("dica")).grid(
+                row=0, column=len(self.colunas) + extra, sticky="ns", pady=8)
 
         def entrar(_=None):
             item.configure(fg_color=Cores.CARD_HOVER)
 
         def sair(_=None):
-            item.configure(fg_color=fundo)
+            item.configure(fg_color=registro["fundo"])
 
-        for widget in [item] + celulas:
-            widget.bind("<Enter>", entrar, add="+")
-            widget.bind("<Leave>", sair, add="+")
+        # Um bind por LINHA em vez de um por widget: antes eram 3 eventos
+        # x 15 widgets = 45 chamadas de bind(). Com uma bindtag propria da
+        # linha sao 3 no total, e todos os filhos herdam.
+        etiqueta = f"tl{id(self)}_{indice}"
+        for widget in [item] + registro["rotulos"]:
+            widget.bindtags((etiqueta,) + widget.bindtags())
             if self.ao_clicar:
                 widget.configure(cursor="hand2")
-                widget.bind("<Button-1>", lambda _e, l=linha: self.ao_clicar(l), add="+")
+
+        item.bind_class(etiqueta, "<Enter>", entrar)
+        item.bind_class(etiqueta, "<Leave>", sair)
+        if self.ao_clicar:
+            item.bind_class(etiqueta, "<Button-1>",
+                            lambda _e, r=registro: self.ao_clicar(r["dados"]))
+
+        return registro
+
+    def _aplicar_linha(self, registro, indice, linha):
+        """Atualiza uma linha existente. So configure(), sem criar widget."""
+        fundo = Cores.TABELA_LINHA if indice % 2 == 0 else Cores.TABELA_LINHA_ALT
+        registro["fundo"] = fundo
+        registro["dados"] = linha
+        registro["frame"].configure(fg_color=fundo)
+
+        for coluna_idx, coluna in enumerate(self.colunas):
+            cor = coluna["cor"](linha) if callable(coluna.get("cor")) else Cores.TEXTO
+            registro["rotulos"][coluna_idx].configure(
+                text=self._valor_formatado(coluna, linha), text_color=cor)
 
     def _mostrar_vazio(self):
         caixa = ctk.CTkFrame(self.corpo, fg_color="transparent")
         caixa.pack(expand=True, pady=60)
+        self._vazio_widget = caixa
 
         ctk.CTkLabel(caixa, text=self.vazio.get("icone", Icone.BUSCAR),
                      font=Fontes.icone(34), text_color=Cores.TEXTO_APAGADO).pack()

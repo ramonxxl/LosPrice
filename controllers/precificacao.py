@@ -199,6 +199,19 @@ def simular(custo, canal, preco, imposto_pct, custo_fixo_pct, custo_fixo_rs=0.0)
     return analisar_venda(custo, preco, enc, custo_fixo_rs)
 
 
+def piso(custo, canal, imposto_pct, custo_fixo_pct, custo_fixo_rs=0.0):
+    """Preco de lucro zero neste canal. Abaixo disso e prejuizo garantido."""
+    enc = encargos_do_canal(canal, imposto_pct, custo_fixo_pct)
+    return preco_minimo(custo, enc, custo_fixo_rs)
+
+
+def sugerido(custo, canal, margem_pct, imposto_pct, custo_fixo_pct,
+             custo_fixo_rs=0.0):
+    """Preco que entrega a margem desejada neste canal."""
+    enc = encargos_do_canal(canal, imposto_pct, custo_fixo_pct)
+    return calcular_preco(custo, enc, margem_pct, custo_fixo_rs).preco
+
+
 def custo_alvo(preco_desejado, canal, margem_desejada, imposto_pct,
                custo_fixo_pct, custo_fixo_rs=0.0):
     """Quanto a ficha pode custar para bater um preco de venda com margem X."""

@@ -1,9 +1,12 @@
 losprice.db
+dados/
 backups/
 relatorios/
+assets/versao.txt
 
 dist/
 build/
+*.zip
 
 __pycache__/
 *.pyc

@@ -89,6 +89,18 @@ preço = (custo + custos em R$) ÷ (1 − soma dos percentuais)
 
 ## Instalação
 
+### Usar o programa pronto (Windows)
+
+Baixe o `LosPrice.zip` da página de
+[Releases](https://github.com/ramonxxl/LosPrice/releases), extraia a pasta
+onde quiser e execute **`LosPrice.exe`**. Não precisa ter Python instalado.
+
+Os dados ficam ao lado do executável, em `dados/`, `backups/` e `relatorios/`.
+Para atualizar depois, substitua os arquivos do programa e **mantenha essas
+três pastas** — assim nada é perdido.
+
+### Rodar a partir do código
+
 Requer **Python 3.10+**.
 
 ```bash
@@ -99,6 +111,15 @@ python main.py
 ```
 
 O banco de dados é criado automaticamente na primeira execução.
+
+### Gerar o executável
+
+```bash
+build.bat
+```
+
+O resultado sai em `dist/LosPrice/`. Todo push na `main` também gera uma
+release automática pelo GitHub Actions.
 
 ---
 

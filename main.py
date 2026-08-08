@@ -298,7 +298,7 @@ class LosPrice(ctk.CTk):
 
     def _aplicar_icone(self):
         """Icone da janela e da barra de tarefas. Ausencia nao impede o app de abrir."""
-        caminho = os.path.join(PASTA_RAIZ, "assets", "icone.ico")
+        caminho = conexao.caminho_recurso("assets", "icone.ico")
         if not os.path.exists(caminho):
             return
         try:

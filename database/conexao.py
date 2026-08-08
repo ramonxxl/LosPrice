@@ -16,6 +16,7 @@ Todo acesso passa pelos controllers.
 import os
 import shutil
 import sqlite3
+import sys
 from contextlib import contextmanager
 from datetime import datetime
 
@@ -23,11 +24,32 @@ from datetime import datetime
 # Caminhos
 # ---------------------------------------------------------------------------
 
-PASTA_DATABASE = os.path.dirname(os.path.abspath(__file__))
-PASTA_RAIZ = os.path.dirname(PASTA_DATABASE)
-PASTA_BACKUP = os.path.join(PASTA_RAIZ, "backups")
+# Rodando como .exe do PyInstaller, o codigo vive numa pasta interna que e
+# substituida a cada atualizacao. Banco, backups e relatorios precisam ficar
+# FORA dela, ao lado do executavel, senao o usuario perde os dados ao
+# atualizar ou mover o programa.
+CONGELADO = getattr(sys, "frozen", False)
 
-CAMINHO_BANCO = os.path.join(PASTA_DATABASE, "losprice.db")
+PASTA_DATABASE = os.path.dirname(os.path.abspath(__file__))
+
+if CONGELADO:
+    PASTA_RAIZ = os.path.dirname(sys.executable)
+    PASTA_DADOS = os.path.join(PASTA_RAIZ, "dados")
+else:
+    PASTA_RAIZ = os.path.dirname(PASTA_DATABASE)
+    PASTA_DADOS = PASTA_DATABASE
+
+PASTA_BACKUP = os.path.join(PASTA_RAIZ, "backups")
+CAMINHO_BANCO = os.path.join(PASTA_DADOS, "losprice.db")
+
+
+def caminho_recurso(*partes):
+    """
+    Caminho de um arquivo empacotado (assets/). No .exe eles ficam em
+    sys._MEIPASS; em desenvolvimento, na raiz do projeto.
+    """
+    base = getattr(sys, "_MEIPASS", None) or os.path.dirname(PASTA_DATABASE)
+    return os.path.join(base, *partes)
 
 # Unidades base usadas internamente. Tudo e convertido para uma delas.
 UNIDADE_BASE_PESO = "G"
@@ -60,6 +82,7 @@ def _preparar_conexao(conexao):
 
 def abrir_conexao():
     """Retorna uma conexao ja configurada. Quem chama e responsavel por fechar."""
+    os.makedirs(PASTA_DADOS, exist_ok=True)
     conexao = sqlite3.connect(CAMINHO_BANCO)
     _preparar_conexao(conexao)
     return conexao

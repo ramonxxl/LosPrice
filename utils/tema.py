@@ -17,6 +17,9 @@ CustomTkinter aceita cor como tupla (modo_claro, modo_escuro).
 Todas as cores compostas abaixo seguem esse formato.
 """
 
+import os
+import sys
+
 import customtkinter as ctk
 
 # ---------------------------------------------------------------------------
@@ -25,8 +28,27 @@ import customtkinter as ctk
 
 APP_NOME = "LosPrice"
 APP_SLOGAN = "Precifique com inteligencia. Lucre com confianca."
-APP_VERSAO = "1.0.0"
 APP_FAMILIA = "Los Software"
+
+VERSAO_PADRAO = "1.0.0"
+
+
+def _ler_versao():
+    """
+    A build automatica grava assets/versao.txt com MAJOR.MINOR.BUILD.
+    Rodando do codigo-fonte esse arquivo nao existe, entao cai no padrao.
+    """
+    base = getattr(sys, "_MEIPASS", None) or os.path.dirname(
+        os.path.dirname(os.path.abspath(__file__)))
+    caminho = os.path.join(base, "assets", "versao.txt")
+    try:
+        with open(caminho, encoding="utf-8") as arquivo:
+            return arquivo.read().strip() or VERSAO_PADRAO
+    except OSError:
+        return VERSAO_PADRAO
+
+
+APP_VERSAO = _ler_versao()
 
 
 # ---------------------------------------------------------------------------
